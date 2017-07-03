@@ -10,8 +10,8 @@ const REG_ESCAPE_2 = /\\/g;
 const REG_ARGUMNETS = /\?/g;
 const REG_COLUMN = /^(\!{1,}|\s)*/;
 const REG_QUOTE = /\"/g;
-
-database.defaults.poolIdleTimeout = 10;
+let pool;
+// database.defaults.poolIdleTimeout = 10;
 
 require('./index');
 
@@ -26,11 +26,18 @@ function connStrParser (connstr) {
     port: params.port,
     database: params.pathname.split('/')[1],
     ssl: false,
-    max: 20, //set pool max size to 20
+    max: 25, //set pool max size to 20
     min: 4, //set min pool size to 4
-    idleTimeoutMillis: 1000 //close idle clients after 1 second
+    idleTimeoutMillis: 10 //close idle clients after 1 second
   }
   return config
+}
+
+function createPool (options) {
+  if (!pool) {
+    pool = new database.Pool(connStrParser(options))
+  }
+  return pool
 }
 
 function SqlBuilder(skip, take, agent) {
@@ -1763,7 +1770,7 @@ Agent.prototype.exec = function(callback, returnIndex) {
 
 	Agent.debug && console.log(self.debugname, '----- exec');
 
-  let pool = new database.Pool(connStrParser(self.options))
+  let pool = createPool(self.options)
   pool.connect(function(err, client, done) {
 
 		if (err) {
@@ -1803,7 +1810,7 @@ Agent.prototype.writeStream = function(filestream, buffersize, callback) {
 		buffersize = tmp;
 	}
 
-  let pool = new database.Pool(connStrParser(self.options))
+  let pool = createPool(self.options)
   pool.connect(function(err, client, done) {
 
 		if (err) {
@@ -1844,7 +1851,7 @@ Agent.prototype.writeStream = function(filestream, buffersize, callback) {
 Agent.prototype.writeBuffer = function(buffer, callback) {
 	var self = this;
 
-  let pool = new database.Pool(connStrParser(self.options))
+  let pool = createPool(self.options)
   pool.connect(function(err, client, done) {
 
 		if (err) {
@@ -1888,7 +1895,7 @@ Agent.prototype.readStream = function(oid, buffersize, callback) {
 		buffersize = tmp;
 	}
 
-  let pool = new database.Pool(connStrParser(self.options))
+  let pool = createPool(self.options)
   pool.connect(function(err, client, done) {
 
 		if (err) {
